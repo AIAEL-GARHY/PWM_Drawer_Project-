@@ -1,0 +1,121 @@
+/***********************************************************************/
+/***********************************************************************/
+/********************  Author: Aia El-garhy    *************************/
+/********************  SWC: PWM Drawer         *************************/
+/********************  LAYER: APP              *************************/
+/********************  DATE: 1/9/2024          *************************/
+/***********************************************************************/
+/***********************************************************************/
+#include "STD_TYPES.h"
+#include "DIO_interface.h"
+#include "TIMER_interface.h"
+#include "EXTI_interface.h"
+#include "GIE_interface.h"
+#include "CLCD_interface.h"
+
+
+volatile static f32 TotalTicks=0;
+volatile static f32 OnTicks=0;
+volatile static f32 DutyCycle=0;
+volatile static f32 PeriodTime=0;
+volatile static f32 Frequency=0;
+volatile static u8  COL_NO=0;
+volatile static f32  TickTime=0.004; //in ms (Prescaler/Fsys)
+
+
+void SW_ICU(void);
+
+int main(void)
+{
+	/* EXTI pin input*/
+	DIO_u8SetPinDirection(DIO_PORTD,DIO_PIN2,DIO_PIN_INPUT);
+	/* output for SW PWM*/
+	DIO_u8SetPinDirection(DIO_PORTB,DIO_PIN3,DIO_PIN_OUTPUT);
+	
+	
+	/*CLCD pins direction*/
+	//RS
+	DIO_u8SetPinDirection(DIO_PORTB,DIO_PIN0,DIO_PIN_OUTPUT);
+	//RW
+	DIO_u8SetPinDirection(DIO_PORTB,DIO_PIN1,DIO_PIN_OUTPUT);
+	//E
+	DIO_u8SetPinDirection(DIO_PORTB,DIO_PIN2,DIO_PIN_OUTPUT);
+	//Data pins
+	DIO_u8SetPortDirection(DIO_PORTA, DIO_PORT_OUTPUT);
+	CLCD_voidInit();
+	
+	/*Initialize EXTI*/
+	EXTI_Enable(EXTI_INT0,EXTI_RISING_EGDE);
+	EXTI_callBack_INT0(&SW_ICU);
+	/*TIMERS INIT*/
+	TIMER0_voidInit();
+	TIMER1_voidInit();
+
+	/*GIE*/
+	GIE_voidEnable();
+
+	while (1)
+	{
+		
+		while((TotalTicks ==0 ) && (OnTicks==0));
+		
+		DutyCycle=(OnTicks/TotalTicks)*100;
+		PeriodTime=TotalTicks*TickTime;
+		Frequency= 1.0 / (PeriodTime);
+		CLCD_u8SetPos(0,0);
+		CLCD_u8SendString("D=");
+		CLCD_writeNumber(DutyCycle);
+		CLCD_u8SetPos(0,5);
+		CLCD_u8SendString("%");
+		CLCD_u8SetPos(0,7);
+		CLCD_u8SendString("F=");
+		CLCD_writeNumber( (Frequency) );
+		CLCD_u8SetPos(0,11);
+		CLCD_u8SendString("KHz");
+		CLCD_u8SetPos(1,0);
+		CLCD_u8SendString("T=");
+		CLCD_writeNumber( (PeriodTime)  );
+		CLCD_u8SetPos(1,4);
+		CLCD_u8SendString("ms");
+		CLCD_u8SetPos(1,7);
+		COL_NO= (DutyCycle*8/100);
+		for(int i=0;i<=COL_NO;i++)
+		{
+			CLCD_u8SendString("-");
+		}
+		for(int i=0; i<=8-COL_NO;i++)
+		{
+			CLCD_u8SendString("_");
+		}
+
+
+	}
+	
+	
+}
+
+
+void SW_ICU(void)
+{
+
+	static Counter=0;
+	Local_u16Counter++;
+	if (Counter == 1)
+	{
+		TIMER1_voidSetTimerValue(0);
+	}
+	if(Counter == 2)
+	{
+		TotalTicks=TIMER1_voidGetTimerValue();
+		EXTI_Enable(EXTI_INT0,EXTI_FALLING_EDGE);
+		
+	}
+	if(Counter == 3)
+	{
+		OnTicks=TIMER1_voidGetTimerValue()-TotalTicks;
+		EXTI_Disbale(EXTI_INT0);
+	}
+
+}
+
+
