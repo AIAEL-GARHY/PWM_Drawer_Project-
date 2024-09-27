@@ -24,24 +24,50 @@ static void (*ptrToFunc_ctc)(void)=NULL;
 
 void TIMER0_voidInit(void)
 {
-	/*set fast PWM mode */
-	SET_BIT(TIMER_TCCR0,TIMER0_WGM00);
-	SET_BIT(TIMER_TCCR0,TIMER0_WGM01);
+	#if TIMER0_WAVE_GEN_MODE == TIMER0_CTC_MODE
+	/*set ctc mode */
+	SET_BIT(TCCR0,3);
+	CLR_BIT(TCCR0,6);
+
+	/*set prescaler*/
+	TCCR0 &= 0b11111000;
+	TCCR0 |= TIMER0_PRESCALER;
+
+	/*set compare value*/
+	OCR0 = TIMER0_COMPARE_MATCH_VALUE;
+
+	/*enable ctc interrupt*/
+	SET_BIT(TIMSK,1);
 	
-	/*NON INVERTING*/
-	CLR_BIT(TIMER_TCCR0,TIMER0_COM00);
-	SET_BIT(TIMER_TCCR0,TIMER0_COM01);
 	
-	/*prescaler*/
-	TIMER_TCCR0 &=0b11111000;
-	TIMER_TCCR0 |=TIMER0_PRESCALER;
-	/*compare match value to 32us on time*/
-	TIMER_OCR0= TIMER0_OCR0_VALUE;
+
+	#elif TIMER0_WAVE_GEN_MODE == TIMER0_OVF_MODE
+
+
+	#elif TIMER0_WAVE_GEN_MODE == TIMER0_Fast_PWM_MODE
+	/*set pwm mode */
+	SET_BIT(TCCR0,3);
+	SET_BIT(TCCR0,6);
+
+	/*NON inverting mode*/
+	CLR_BIT(TCCR0,4);
+	SET_BIT(TCCR0,5);
+
 	
+	/*set  32us*/
+	OCR0=63;
+	/*set prescaler*/
+	TCCR0 &= 0b11111000;
+	TCCR0 |= TIMER0_PRESCALER;
 	
+
+	#elif TIMER0_WAVE_GEN_MODE == TIMER0_Phase_Correct_MODE
+	
+	#else
+	#error "WRONG WAVE GENERATION MODE SELECT "
+	#endif
 
 }
-
 
 u8 TIMER0_callBack(u8 copy_u8IntID,void (*ptrToFunc)(void))
 {
@@ -85,10 +111,11 @@ void TIMER1_voidInit(void)
 	CLR_BIT(TIMER1_TCCR1B,TIMER1_WGM12);
 	CLR_BIT(TIMER1_TCCR1B,TIMER1_WGM13);
 	
-	/*prescaler*/
-	TIMER1_TCCR1B &=0b11111000;
-	TIMER1_TCCR1B |=TIMER1_PRESCALER;
-	
+	/*prescaler/8*/
+	CLR_BIT(TIMER1_TCCR1B,0);
+	SET_BIT(TIMER1_TCCR1B,1);
+	CLR_BIT(TIMER1_TCCR1B,2);
+
 }
 
 void TIMER1_voidSetTimerValue(u16 copy_u16TimerValue)
