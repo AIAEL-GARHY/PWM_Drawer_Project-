@@ -25,7 +25,7 @@
 #define TIMER1_OCR1A        (*((volatile u16*)0X4A))
 #define TIMER1_ICR1         (*((volatile u16*)0X46))
 #define TIMER1_TCNT1        (*((volatile u16*)0X4C))
-	
+#define TIMER1_OCR1B        (*((volatile u16*)0x48))	
 
 	
 #endif	
