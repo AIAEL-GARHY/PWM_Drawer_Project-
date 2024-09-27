@@ -16,6 +16,11 @@
 #define TIMER_PRESCALER_64    3
 #define TIMER_PRESCALER_256   4
 #define TIMER_PRESCALER_1024  5
+// Timer0 modes
+#define TIMER0_CTC_MODE            0
+#define TIMER0_OVF_MODE            1
+#define TIMER0_Fast_PWM_MODE       2
+#define TIMER0_Phase_Correct_MODE  3
 
 #define TIMER0_TOIE0           0
 #define TIMER0_OCIE0           1
